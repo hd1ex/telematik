@@ -1,4 +1,124 @@
-# Internet Routing
+# Kapitel 2: Router
+
+Ein Router leitet Daten von Eingabeport(s) an Ausgabeport(s) weiter.
+
+Das Weiterleiten von Daten ist eine Aufgabe des **Datenpfads**.
+
+## Geräte für Layer
+- Hubs -> Layer 1
+- Bridges -> Layer 2
+- Routers -> Layer 3
+
+## Routing
+- Aufgabe des Kontrollpfades
+
+### Router
+- Leitet Daten an Port weiter
+- Weiterleiten mit der spezifizierten Geschwindigkeit des Ausgangs (line speed)
+- Kurze Warteschlangen
+- Möglichst kleine Weiterleitungstabellen (kleiner Speicher)
+
+### Aufgaben
+- IP-Version prüfen
+- Checksumme prüfen
+- Time to live dekrementieren
+- Checksumme anpassen
+
+### Typen
+Core router
+- von service providern
+- große Datenraten
+- schnelle Hardware erforderlich
+- Redundanz
+- Kosten sind zweitrangig
+
+Enterprise router
+- verschiedene Systeme in Unternehmen und Hochschulen verbinden
+- Konnektivität für große Anzahl an Endsystemen schaffen
+- VLANs, firewalls
+- kleine Kosten pro Port
+- große Anzahl von Ports
+- Leichte Wartbarkeit
+
+Edge router (access router)
+- am äußeren Ende zum service provider
+- schaffen Konnektivität für Häuser oder kleine Unternehmen
+- Unterstützung für VPNs, IPsec, etc.
+
+## Weiterleitungstabelle
+- Tabelle mit Präfix und Port
+- größter Präfix wird verwendet (longest prefix matching)
+- am besten mit effizienter Datenstruktur implementiert -> Trie
+
+### Trie
+Baumstruktur für Weiterleitungstabelle
+- Looḱup O(W) (W ist Adresslänge)
+- Speicherverbrauch O(N*W) (In der Praxis kleiner)
+- Aktualisierungen O(W)
+
+#### Path Compression
+- Lookup O(W)
+- Speicherverbrauch O(N)
+- Aktualisierungen O(W)
+
+### Hashtabelle
+- Lookup in O(1)
+- longest prefix matching funktioniert nicht -> als Cache für Trie verwenden
+
+## Longest prefix matching
+### Implementierung in Hardware
+- RAM based access -> wird nicht verwendet
+
+#### CAM based access
+- TCAM (ternary content access memory) -> hat zusätzlich don't care (für Präfixvergleich)
+- Präfixe sind sortiert in CAM (nach Länge)
+- Lookup inherhalb eines Taktzyklusses
+- Hoher Stromverbrauch
+- Sehr teuer
+- Geringe Dichte    
+-> Skaliert nicht
+
+## Routeraufbau
+- Ein- und Ausgabeports
+- Fabric zum verarbeiten der Daten
+
+Blocking. Lösungen:
+- Overprovisioning -> Fabric ist schneller als ports
+- Buffering -> Warteschlange (entweder in Ports oder im Fabric)
+- Backpressure -> Signal an Eingabeports
+- Parallel switch fabrics -> Parallelverarbeitung, Zugang zu Ausgang muss schneller sein
+
+### Puffer
+An der Eingabe
+- Durchsatz ist nicht sehr hoch (60%- 75%)
+
+An der Ausgabe
+- Speedup von N (Anzahl der Eingabeports) benötigt
+- hoher Durchsatz möglich (80%-85%)
+
+Im Fabric (distributed buffer)
+- Matrizenstruktur
+- nur Speedup von 1 nötig
+- optimaler Durchsatz
+- viel Speicher benötigt
+
+Zentraler Puffer
+- Weniger Verbrauch
+- Braucht hohe Geschwindigkeit (1/2N)
+
+### Fabric
+z. B. als Bus realisiert
+- für kleine Systeme
+- Bus muss Geschwindigkeit aller Eingänge unterstützen (Summe)
+
+Crossbar
+- als Matrix alles mit allem Verbinden
+- auch in eher kleinen Systemen
+
+Multi level switching networks
+- nicht volle Matrix implementiert
+
+# Kapitel 3: Internet Routing
 
 Routing ist
 - für die Pfadbestimmung zuständig
@@ -415,3 +535,208 @@ OSPF
 - Adj-RIB-In: Existiert pro Partner, speichert empfangene Informationen von diesem Partner
 - Loc-RIB: Die wirkliche Routingtabelle, nur wirklich präferierte Routen zu Zielnetzwerken sind hier drinnen -> daraus wird die "Forwarding Information Base" (FIB) gebaut
 - Adj-RIB-Out: Existiert pro Partner, enthält Routen, welche an diesen Partner veröffentlicht werden
+# Kapitel 4: Label Switching
+
+Switching wird nicht nur Anhand der Zieladresse und des *für das Paket aktuell* kürzesten Pfades, sondern auch Anhand anderer, im Paketheader vorhanden, Daten betrieben.
+
+Dies ermöglicht z. B. dass mehrere Pfade benutzt werden können oder das zusammengehörige Pakete den gleichen Pfad nehmen.
+
+## Fluss (flow)
+
+Ein (Daten-)Fluss ist eine abstrakte Sicht auf zusammengehörende Pakete.
+
+Zusammengehörend sind dann z. B. Pakete
+- von einer TCP-Verbindung
+- mit einem bestimmten TCP/UDP-Port
+- die eine HTTPS-Verbindung beschreiben
+- von einer VoIP-Verbindung
+- ...
+- oder eine Kombination aus diesen Sachen.
+
+-> Flussbasierte Weiterleitung ist Ebenenunhabhängig
+
+### Micro-Flows
+- beziehen sich auf eine "Verbindung"
+- feine Kontrollmöglichkeiten
+- große Anzahl von Flüssen möglich
+
+### Macro-Flows
+- höheres Aggregationsniveau
+- Aggegierung von mehreren "Verbindungen"
+- kleinere Anzahl von Flüssen
+
+## MPLS
+- "Multiprotocol Label Switching"
+- verbindungsorientierte Kommunikation aufsetzend auf IP
+- klare Separierung von Weiterleitung (label switching; Datenebene) und Steuerung (Manipulation von Label-Bindung; Steuerungsebene)
+- das ursprüngliche Ziel war die schnellere Bestimmung des nächsten Spungknotens
+- inzwischen wird es auch für "traffic engingeering" und VPNs verwendet
+
+### Komponenten
+- "Label-Switching Router" (LSR) -> kann IP und MPLS
+- "Label-Edge Router" (LER) -> LSR mit nicht LSR-Nachbar; betreibt Klassifizierung
+
+### Forwarding Equivalence Class
+- Klassen für Pakete, die gleich behandelt werden sollen
+
+### MPLS-Label
+Struktur: 
+- Label: The label itself
+- Exp: Bits for experimental usage
+- S: Stack-bit
+- TTL: Time-to-live
+
+### Protokoll für das Verteilen von Labeln
+- ursprünglich: das, was mit MPLS definiert worden ist
+- heute de-facto: RSVP-TE (Resource ReserVation Protocol)
+# Kapitel 5: Software Defined Networking
+
+Implementierung der Steuerungsebene in Software.
+
+- SDN-Steuerung läuft als Software auf handelsüblicher Hardware
+- Datenebene besteht aus simplen Paketprozessoren (SDN-Switche)
+
+## Ablaufsteuerung
+### Proaktive Flussprogrammierung
+- Regeln werden bevor das erste Paket des Flusses ankommt programmiert
+- normalerweise grobe, vordefinerte Entscheidungen
+- keine Verzögerung für neue Verbindungen
+- der Datenverkehr wird nicht aufgehalten, wenn keine Verbindung zur Steuerung besteht
+
+### Reaktive Flussprogrammierung
+- Regeln werden als Reaktion auf das Ankommen des ersten Pakets eines Flusses programmiert
+- erlaubt feine Kontrolle auf Abruf
+- kurze Aufbauzeit für jeden Datenfluss -> hoher Overhead für kurze Datenflüsse
+- neue Datenflüsse können nicht konfiguriert werden, wenn die Verbindung zur Steuerung unterbrochen ist
+
+## SDN-Arbeitsablauf in der Praxis
+Die SDN-Steuerung kann Vergleichsregeln basierend auf
+- den Eingangs-/Ausgangsport (`INPORT/OUTPORT`, `<portnum>`)
+- die IP-Quelladresse (`IP_SRC`, `<ip-or-subnet>`)
+- die IP-Zieladresse (`IP_DST`, `<ip-or-subnet>`)
+- die Ethernet-Quelladresse (`MAC_SRC`, `<mac>`)
+- die Ethernet-Zieladresse (`MAC_DST`, `<mac>`)
+- den Ethernet-Rahmentyp (`ETHERTYPE`, `<hex>`)
+- den UDP-Quell-/Zielport
+- ...
+
+in die Flusstabelle(n) der Switches packen.
+
+Basierend auf den Regeln können dann Pakete
+- verworfen (`DROP`)
+- an alle anderen Ports geflutet (`FLOOD`)
+- an den Controller gesendet (`CONTROLLER`)
+- ausgegeben (`OUTPUT`, `<portnum>`)
+- an eine weitere (indexmäßig höhere) Flusstabelle weitergegeben (`GOTO`, `<tablenum>`)
+- verändert (`SET_FIELD`, `<fieldname>`, `<newvalue>`)
+
+werden.
+
+Zusätzlich kann die Priorität (`PRIORITY`) einer Regel (standardmäßig 1) geändert werden.
+
+## Reagieren auf Ereignisse
+`onConnect(switch)`
+- bei einer neuen Kontrollverbindung zum Switch
+- sinnvoll für proaktive Programmierung
+- `switch` ist eine Referenz zum Switch (`switch.id` ist dessen ID)
+
+`onPacketIn(packet, switch, inport)`
+- wird aufgerufen, wenn ein Paket mit `r.ACTION('CONTROLLER')` weitergeleitet wurde
+- `packet` ist das Paket, welches weitergeleitet wurde und gibt Zugang zu dessen Header-Feldern (`IP_SRC`, `MAC_DST`, `TTL`, ...)
+
+Beispiel:
+```
+onConnect(switch) {
+	r = Rule()
+	r.MATCH('*')
+	r.ACTION('CONTROLLER')
+	r.PRIORITY(0) // lowest priority
+	send_rule(r, switch)
+}
+
+onPacketIn(packet, switch, inport) {
+	r1 = Rule()
+	r1.MATCH('MAC_SRC', packet.MAC_SRC)
+	r1.MATCH('MAC_DST', packet.MAC_DST)
+	r1.ACTION('OUTPUT', getPort(packet.MAC_DST))
+	send_rule(r1, switch)
+
+	r2 = Rule()
+	r2.MATCH('MAC_SRC', packet.MAC_DST)
+	r2.MATCH('MAC_DST', packet.MAC_SRC)
+	r2.ACTION('OUTPUT', getPort(packet.MAC_SRC))
+	send_rule(r2, switch)
+}
+```
+
+`send_packet(packet, switch, rule)`
+- speist Paket in Switch ein
+- `rule`: optionale Regel, welche anstatt der Flusstabelle verwendet werden soll
+
+## OpenFlow
+### Reservierte Ports
+- `ALL`: Alle außer dem Eingangsport (flooding)
+- `IN_PORT`: Sende Paket zurück
+- `CONTROLLER`: Paket an Steuerung weiter leiten
+- `NORMAL`: Kontrolle des Weiterleitungsprozess an die herstellerspezifische Switch-Implementierung abgeben
+
+### Flusstabelle
+Schema: Match fields | Priority | Actions | Counters | Timeouts | Cookie | Flags
+- Counters: Anzahl der verarbeiteten Pakete
+- Timeouts: Maximale Flusslebenszeit -> automatisches Entfernen von Flüssen
+- Cookie: Markierung von SDN-Steuerung -> wird nicht bei der Paketverarbeitung verwendet
+- Flags: Gibt an, wie ein Fluss verwaltet wird (z. B. Nachricht an Steuerung, wenn ein Fluss entfernt wird)
+
+### Gruppentabellen
+- Schema Gruppeneintrag: Group identifier | Group type | Counters | Action buckets
+- weitere Weiterleitungsmethoden (link selection, fast failover)
+- Gruppeneinträge können von anderen Tabellen über Gruppenaktionen (group actions) aufgerufen werden
+ -> diese haben einen eindeutigen Gruppenbezeichner (group identifier)
+- der Effekt von Gruppenprozessierung hängt vom Gruppentyp und den Aktionbehältern ab
+
+#### Gruppentypen
+- All: Alle Behälter einer Gruppe werden ausgeführt
+- Select: Wählt einen von vielen Behältern einer Gruppe aus (z. B. Round-Robin oder Hashing)
+- Fast failover: Führt den ersten "lebendigen" Behälter in einer Gruppe aus (lebendig=der zugehörige Port hat Verbindung)
+- Indirect: Führt den einen Behälter einer Gruppe aus (austauschbar)
+
+## Steuerungsverbindungen
+### Out-of-band
+- dedizierte (physische) Kontrollkanäle für Nachrichten zwischen Steuerung und Switch -> Kostenintensiv
+### In-band
+- Kontrollnachrichten gehen über den gleichen Kanal, wie der normale Datenverkehr -> die Steuerung muss sicher stellen, dass die Regeln nicht die Verbindung auf der Steuerungsebene beeinträchtigen
+
+## Skalierbarkeit
+- logisch zentralisierte Ansatz benötigt leistungsstarke Steuerungen -> mögliche Überlastung von Kontrollebene
+- veschiedene Parameter für Implikationen bzgl. der Skalierbarkeit: Anzahl Switche, Endsystem, Datenflusse, Nachrichten; Verzögerung zwischen Switchen und Steuerung
+- mögliche Lösung: Verteilte Steuerungen
+
+### Verteilte Steuerungen
+- Skalierbarkeit
+- Zuverlässigkeit
+- inkrementelles/modulares Deployment
+- ...
+
+## Limitierungen der Datenebene
+### Konsistenz und Synchronisation
+CAP-Theorem - zwei der folgenden Eigenschaften können zu einer Zeit erfüllt sein:
+- Consistency
+- Availability
+- Partition tolerance
+
+### Kapazität von Flusstabellen
+- aktuell TCAM mit ca. 2000-20000 Einträgen möglich
+- mögliche Lösungen: bessere Hardware; Workarounds wie Caching, Flussaggregierung und optimierte Verteilung von Regeln
+
+### Latenzen der Flussprogrammierung
+- Verarbeitungsdauer auf der Steuerungsebene
+- Ausbreitungsverzögerung zwischen Switch und Steuerung
+- Verarbeitungsdauer auf der Datenebene
+- mögliche Lösungen: proaktives Einstellen wo möglich, schlaue Platzierung der Steuerung (schweres Problem)
+
+## Werkzeuge und Programme
+### OpenDaylight (ODL)
+- SDN-Steuerung auf Produktionsniveau
+- Java-basiertes Open-Source-Projekt, welches von der Linux-Foundation gehostet wird
+- Beiträge von fast jeder großen Netzwerkorganisation
+- Unterstützung für verschiedene Schnittstellen: OpenFlow, OVSDB, NETCONF, ...
