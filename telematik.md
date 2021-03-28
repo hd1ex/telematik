@@ -817,3 +817,174 @@ Docker ist sehr viel besser als KVM.
 - Anforderungen auf Netzwerkbetreiber-Niveau
 - Co-Existenz mit Legacy-Netzwerken
 
+# Kapitel 7: Internet Congestion Control
+
+## Geteilte (Netzwerk-)Ressourcen
+Übergeordnete Ziele in Bezug auf Netzwerke:
+- eine **gute Auslaustung** von Netzwerkressourcen bereit stellen
+- eine **akzeptabele Performanz** für Benutzer bereit stellen
+- **Fairness** zwischen Benutzern / Datenströmen bereit stellen
+
+Mechanismen, welche mit geteilten Ressourcen handhaben, sind
+- Scheduling
+- Medienzugriffskontrolle
+- Staukontrolle (Congestion control)
+
+## Problem
+Staukontrolle
+- verändert die Last, um Überlastsituationen zu vermeiden
+- benutzt Feedback-Informationen
+
+## Puffer
+- Router benötigen Puffer (Warteschlangen), um temporäre Verkehrsspitzen abzufangen
+- Wenn Puffer voll sind, müssen die Pakete verworfen werden
+
+## Throughput vs. Goodput
+- Throughput: Übertragene Datenrate
+- Goodput: Datenrate auf Anwendungsebene
+
+## Knee and Cliff
+- Knee: Datenlast, bei der angefangen wird zu Puffern
+- Cliff: max. Last, bevor Pakete verworfen werden
+
+## Window-based Congestion Control
+Fenster für Staukotrolle (CWnd)
+- Bestimmt die max. Anzahl von nicht-bestätigten Paketen pro TCP-Verbindung
+- passt die Senderate der Quelle zur Bottleneck-Kapazität an -> selbsttaktend
+
+## Rate-based Congestion Control
+Die Senderate wird limitiert.
+
+## Implizite vs explizite Stausignale
+Implizit: Ohne dedizierte Unterstützung vom Netzwerk
+- Timeout vom "retransmission timer"
+- Empfang von doppelten ACKs
+- RTT-Variation
+
+Explizit: Knoten innerhalb des Netzwerks signalisieren Stau
+- ECN und DCTCP (später)
+- Ethernet congestion control
+
+Im Internet: Normalerweise keine Unterstützung für explizite Stausignale
+- Staukontrolle muss mit impliziten Stausignalen funktionieren
+- explizite Meldungen nur komplementär
+
+## End-to-end vs Hop-by-hop
+- End-to-end: Von Endsystem zu Endsystem
+- Hop-by-hop: Von Sprung zu Sprung (zwischen Knoten)
+
+## Verbesserte TCP-Versionen
+Ziele:
+- verfügbare Netzwerkkapazität schätzen, um Überlastungen zu vermeiden -> Feedback geben
+- den Verkehr dementsprechend Regulieren -> Anwenden der Staukontrolle
+
+## TCP Tahoe
+benutzte **Mechanismen** für Staukontrolle:
+- langsames Starten
+- Timeout
+- Stauvermeidung
+- "Fast retransmit"
+
+Stausignal
+- Timeout oder
+- Empfangen von doppelten ACKs
+
+Gleichung muss immer erfüllt sein:
+```
+LastByteSent - LastByteAcked ≤ min{CWnd, RcvWindow}
+```
+
+### Variablen
+- `CWnd`: Kontrollfenster
+- `SSThres`: Threshold für langsamen Start
+
+### Einfacher Ansatz
+AIMD: additive increase, multiplicative decrease von `CWnd`
+
+### Stausignal
+- ACKs werden normalerweise immer für die *nächste* Rahmennummer, die noch zu empfangen sind gesendet (z. B. 30 empfangen, sende ACK mit Nummer 40)
+- erneut Senden nach dem Empfang von 3 gleichen ACKs
+
+## TCP Reno
+Neues Konzept: Unterscheiden zwischen
+- großem Stausignal -> Timeout
+- kleinen Stausignal -> duplizierte ACKs
+
+Beim Empfang von einem kleinen Stausignal
+- kein Reset auf langsamen Start
+- fast recovery
+
+Beim Empfang von einem großen Stausignal
+- setze auf langsamen Start zurück (wie bei TCP Tahoe)
+
+## Analyse der Verbesserungen
+### Selbsttaktung
+TCP pendelt sich selbst durch das nutzen von Fenstern ein.
+
+### Langsamer Start
+- für den Anfang der Verbindung (da dort kein Takt vorhanden ist)
+- bei Vermutung von Stau
+- für hohen Goodput zuständig (ohne nur 35% beim Einpendeln)
+
+### Retransmission Timer
+- Schätzung der Rundreisezeit (RTT)
+- `EstimatedRTT = (1 − 𝛼) * EsitimatedRTT + 𝛼 * SampleRTT`
+- Timeout `RTO = 𝛽 * EstimatedRTT`
+- übliche Werte: `𝛼=0,125; 𝛽=2`
+
+#### Multiple Retransmissions
+Problem 1: Wie groß sollte das Interval zwischen 2 aufeinanderfolgenden Erneutsendungen sein   
+Ansatz: Exponetielles Backoff -> `RTO = 2 * RTO` (mit Obergrenze, z. B. von 60s)
+
+Problem 2: Zu welchem Segment gehört ein empfangenes ACK - zum Originalen oder zum erneut Gesendeten    
+Ansatz: Karns Algorithmus
+- ACKs von erneut gesendeten Segmenten werden nicht in die Berechnung der geschätzten RTT und Abweichung miteinbezogen
+- Backoff wird wie vorher berechnet
+- Timeoutwert wird mit dem Backoff-Algorithms berechnet bis ein ACK eines nicht erneut gesendeten Segments empfangen wurde
+- danach wird der ursprüngliche Algorithmus wieder eingesetzt
+
+### Stauvermeidung
+- bei neuer TCP-Verbindung muss die Last von Bestehenden gesenkt werden
+- mittels AIMD
+
+## Optimierungskriterien
+
+### Netzwerklimitierter Sender
+Senderate ist durchs Netzwerk (bzw. dessen Bottleneck) limitert.
+
+### Applikationslimitierter Sender
+Senderate ist durch Applikation limitert.
+
+### Fairness
+Alle Sender, die das Bottleneck teilen, bekommen einen fairen Anteil.
+
+#### Jains Fairness-Index
+Fairnesszahl ist die quadrierte Summe geteilt durch N mal die Summe der Quadrate der Datenraten. 
+
+#### Max-min Fairness
+- Benutzer können sagen, welche Datenraten sie benötigen
+- Datenraten sind minimal der angeforderte Bedarf (wenn dieser Fair gedeckt werden kann)
+- und maximal `MAXRATE / N`, wobei `MAXRATE` die max. mögliche Datenrate der Verbindung ist, die aufgeteilt wird
+- nicht angeforderte Datenraten kommen auch in den Pool für `MAXRATE`
+
+## Active Queue Management (AQM)
+Beim Erkennen von Staus *frühes Feedback* and Sender geben
+- zufällig Pakete verwerfen
+- oder ein explizites Stausignal senden
+
+### Random Early Detection (RED)
+Ansatz:
+- `durchschnittliche Warteschlangenbelegung < qmin` -> keine Segmente verwerfen
+- `qmin <= durchschnittliche Warteschlangenbelegung < qmax` -> Wahrscheinlichkeit für das Verwerfen eines einkommenden Pakets wird linear mit der durchschnittlichen Warteschlangenbelegung erhöht
+- `durchschnittliche Warteschlangenbelegung >= qmax` -> alle einkommenden Segmente verwerfen 
+- Problem: Wie setzt man die RED-Parameter `qmin, qmax, maxp`?
+
+### Explizit Congestion Notification (ECN)
+- markiere IP-Paket, welches zum Empfänger weiter geleitet wird
+- der Empfänger schaut, dass das Fenster beim Sender dementsprechend angepasst wird
+- über zwei Bits im ECN-Feld vom IP-Header: ECT - ECN-capable Transport (gesetzt vom Sender); CE - Congestion experienced (gesetzt vom Router)
+- Nachrichten in Ebene 4 (TCP):
+  - ECE bit (ECN echo): Nachricht an Sender, welche im ACK mitgeführt wird
+  - CWR bit (Congestion window reduced): Signalisiert Empfang von ECE an TCP-Empfänger
+  - wird als kleines Stausignal interpretiert
+
