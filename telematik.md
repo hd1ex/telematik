@@ -740,3 +740,80 @@ CAP-Theorem - zwei der folgenden Eigenschaften können zu einer Zeit erfüllt se
 - Java-basiertes Open-Source-Projekt, welches von der Linux-Foundation gehostet wird
 - Beiträge von fast jeder großen Netzwerkorganisation
 - Unterstützung für verschiedene Schnittstellen: OpenFlow, OVSDB, NETCONF, ...
+
+# Kapitel 6: Network Function Virtualization
+
+## Middlebox
+Ein Gerät des Datenpfades zwischen einer Quelle und einem Ziel, welches Funktionen ausführt, die über die eines normalen, standard-IP-Router hinaus gehen.
+
+## Network Function
+Eine Funktionalität, die von einer Middlebox auf dem Datenpfad ausgeführt wird.
+
+Beispiele: NAT, firewall, proxy, load balancing, intrusion detection, etc.
+
+### Network Address Translation (NAT)
+Verbindet einen Netzwerkbereich mit **privaten Adressen** mit einem Netzwerkbereich aus **globalen, eindeutigen Adressen**.
+- Problem: private Adressen können nicht fürs Internet-Routing verwendet werden
+- Klienten im privaten Adressbereich teilen sich globale, eindeutige Adressen -> **Austauschen von Adressen** nötig
+
+### Firewall
+Überwacht und steuert einkommenden und ausgehenden Datenverkehr
+- Barriere zwischen vertrauenswürdigen und nicht vertrauenswürdigen Netzen
+- Leitet weiter oder verwirft Pakete basierend auf einer vordefinierten Regelmenge
+- shallow packet inspection: Entscheidungen nur auf Feldern im **Header**
+- deep packet inspection: Überwacht auch den Inhalt von Datenpaketen
+- Zustandslos: Einzelne Pakete werden unabhängig voneinander betrachtet
+- Zustandsbehaftet: Zustand wird zwischen Paketen behalten
+
+### Caching
+Zwischenpuffern von Inhalten.
+
+### Klassische Middleboxes
+Früher mit proprietärer Hardware implementiert.
+
+## Network Function Virtualization (NFV)
+Ideen vom "cloud computing" nachahmen:
+- Netzwerkfunktionen in Software implementieren
+- Hardwareunabhängigkeit mittels Virtualisierung
+- Verwendung von leistungsstarker Server-Hardware
+
+Vorteile:
+- Teilen von Ressourcen
+- Agilität und Flexibilität
+- schnelles Deployment
+- verringerte Kosten
+
+### Hauptbestandteile von NFV
+- Virtualized Network Functions (VNFs)
+- NFV Management and Orchestration (MANO)
+- NFV Infrastructure (NFVI)
+
+## Virtualisierung
+Softwareabstraktionschicht zwischen Hardware und VMs -> Hypervisor
+
+### Typ 1 Hypervisor
+läuft direkt auf der Hardware
+
+### Typ 2 Hypervisor
+läuft als Userspace-Programm direkt über dem Kernel
+
+### Containerbasierte Virtualisierung
+Ein Kernel stellt mehrere Instanzen (Container) des Host-OS bereit.
+
+### Hypervisor vs. Container
+Docker ist sehr viel besser als KVM.
+
+## Service Function Chain
+- geordnete Menge von Netzwerkfunktionen -> Reihenfolge wird auf Datenfluss angewendet
+- Beispiele: Firewall -> Auth-Server; Load balancer -> Cache
+- z. B. mit MPLS umgesetzt
+
+## Herausforderungen von NFV
+- Sicherheit
+- Performanz
+- Standortwahl
+- Zuverlässigkeit
+- Testen und Fehlerfindung
+- Anforderungen auf Netzwerkbetreiber-Niveau
+- Co-Existenz mit Legacy-Netzwerken
+
