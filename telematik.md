@@ -988,3 +988,103 @@ Ansatz:
   - CWR bit (Congestion window reduced): Signalisiert Empfang von ECE an TCP-Empfänger
   - wird als kleines Stausignal interpretiert
 
+# Kapitel 8: Ethernet Evolution
+## Aloha
+Erstes MAC-Protokoll für paketbasierte, kabellose Netzwerke.    
+Ein Media Access Control:
+- Zeitmultiplexing, variabel, zufällige Zugriffe
+- *asynchroner* Zugriff
+- Problem: Kollisionen (Erkennung und Reaktion)
+- max. Auslastung: 18,4%
+
+## Slotbasiertes Aloha
+Wie Aloha, aber
+- benutzt Zeitslots -> synchroner Zugriff
+- durchnittlich weniger Kollisionen als Aloha
+- Anwendungsbeispiel: GSM (Kontrollkanal)
+- max. Auslastung: 36,8%
+
+## CSMA-basierte Ansätze
+CSMA - Carrier Sense Multiple Access
+
+CSMA/CD
+- .../"Collision Detection"
+- Zuhören vor dem und während dem Senden
+- Kollisionen werden durch Zuhören erkannt
+- Anwendungsbeispiel: Ethernet
+
+CSMA/CA
+- .../"Collision Avoidance"
+- Sendesytem vermutet Kollision, wenn ein ACK fehlt
+- Anwendungsbeispiel: WLAN
+
+## Ethernet
+- Datenrate: 10 Mbit/s
+- Sende Jamming-Signal, wenn eine Kollision erkannt wurde
+- und wende exponentiellen Backoff an
+- braucht minimale Sendezeit (Rahmengröße), um CD anzuwenden
+
+## Fast Ethernet
+- Datenrate: 100 Mbit/s
+- Netzwerktopologie: Stern
+
+## Ethernet-Flusskontrolle
+- Ziel: Vermeide Paketverluste durch Pufferüberläufe
+- Ansatz: Reduziere den gesendeten Verkehr zum Switch
+
+### Implizite Flusskontrolle
+Bei Halbduplexverbindungen möglich:
+- Kollision erzwingen
+- blockiere selber den Kanal
+
+### Explizite Flusskontrolle
+Bei Vollduplexverbindungen möglich:
+- PAUSE-Rahmen wird bei Überlast gesendet
+- Wartezeit wird mitgesendet (bei Zeit=0 wird das Senden später wieder explizit gestartet)
+
+### Zwischenebene für MAC-Steuerung
+- Steuerungsrahmen sind Teil der Zwischenebene (also z. B. der PAUSE-Rahmen)
+
+## Gigabit Ethernet
+- Datenrate: 1 Gbit/s
+- Netzwerktopologie: Stern
+
+### Frame Bursting
+Senden von mehrereren kurzen Rahmen am Stück.
+
+## 10/40/100 Gigabit Ethernet
+- nur noch Punkt-zu-Punkt-Verbindungen
+- nur noch Vollduplexverbindungen
+- das Format des Ethernetrahmens wurde beibehalten
+
+## Bridges
+- Ziel: Verbinde LANs auf Ebene 2
+
+### Source-Routing bridges
+- Endsysteme fügen Weiterleitungsinformationen zu Sendepaketen hinzu
+- Bridges leiten die Pakete basierend auf diesen Informationen weiter
+- Endsystem muss den Pfad kennen (nicht transparent)
+
+### Transparent Bridges
+- lokale Weiterleitungsentscheidungen in jeder Bridge
+- Weiterleitungsinformationen in Weiterleitungstabelle gespeichert
+- statische und dynamisch erlernte Einträge möglich
+- Endsystem ist nicht in die Weiterleitung involviert
+- wird oft in der Praxis benutzt (z. B. Switches)
+
+#### Grundlegende Aufgaben
+- Aufbau einer zyklusfreien Topologie -> Spanning-Tree-Algorithmus
+- Weiterleiten von Paketen
+
+#### Anforderungen für die Benutzung des Bridge-Protokolls
+- Gruppenadresse (MAC-Adresse)
+- eindeutige Bridge-IDs
+- eindeutige Schnittstellen-IDs
+- Pfad-Kosten
+
+#### Bridge Protocol Data Units (BPDUs)
+Beinhaltet
+- ID der sendenden Bridge
+- ID der angenommenen Wurzel-Bridge
+- Pfad-Kosten von der sendenden Bridge zu der Wurzel-Bridge
+
