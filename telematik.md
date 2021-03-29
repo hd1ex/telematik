@@ -708,7 +708,7 @@ Schema: Match fields | Priority | Actions | Counters | Timeouts | Cookie | Flags
 
 ## Skalierbarkeit
 - logisch zentralisierte Ansatz benötigt leistungsstarke Steuerungen -> mögliche Überlastung von Kontrollebene
-- veschiedene Parameter für Implikationen bzgl. der Skalierbarkeit: Anzahl Switche, Endsystem, Datenflusse, Nachrichten; Verzögerung zwischen Switchen und Steuerung
+- verschiedene Parameter für Implikationen bzgl. der Skalierbarkeit: Anzahl Switche, Endsystem, Datenflusse, Nachrichten; Verzögerung zwischen Switchen und Steuerung
 - mögliche Lösung: Verteilte Steuerungen
 
 ### Verteilte Steuerungen
@@ -821,7 +821,7 @@ Docker ist sehr viel besser als KVM.
 
 ## Geteilte (Netzwerk-)Ressourcen
 Übergeordnete Ziele in Bezug auf Netzwerke:
-- eine **gute Auslaustung** von Netzwerkressourcen bereit stellen
+- eine **gute Auslastung** von Netzwerkressourcen bereit stellen
 - eine **akzeptabele Performanz** für Benutzer bereit stellen
 - **Fairness** zwischen Benutzern / Datenströmen bereit stellen
 
@@ -902,7 +902,7 @@ LastByteSent - LastByteAcked ≤ min{CWnd, RcvWindow}
 AIMD: additive increase, multiplicative decrease von `CWnd`
 
 ### Stausignal
-- ACKs werden normalerweise immer für die *nächste* Rahmennummer, die noch zu empfangen sind gesendet (z. B. 30 empfangen, sende ACK mit Nummer 40)
+- ACKs werden normalerweise immer für die *nächste* Rahmennummer, die noch zu empfangen sind, gesendet (z. B. 30 empfangen, sende ACK mit Nummer 40)
 - erneut Senden nach dem Empfang von 3 gleichen ACKs
 
 ## TCP Reno
@@ -934,9 +934,9 @@ TCP pendelt sich selbst durch das nutzen von Fenstern ein.
 
 #### Multiple Retransmissions
 Problem 1: Wie groß sollte das Interval zwischen 2 aufeinanderfolgenden Erneutsendungen sein   
-Ansatz: Exponetielles Backoff -> `RTO = 2 * RTO` (mit Obergrenze, z. B. von 60s)
+Ansatz: Exponentieller Backoff -> `RTO = 2 * RTO` (mit Obergrenze, z. B. von 60s)
 
-Problem 2: Zu welchem Segment gehört ein empfangenes ACK - zum Originalen oder zum erneut Gesendeten    
+Problem 2: Zu welchem Segment gehört ein empfangenes ACK - zum Originalen oder zum erneut Gesendeten?    
 Ansatz: Karns Algorithmus
 - ACKs von erneut gesendeten Segmenten werden nicht in die Berechnung der geschätzten RTT und Abweichung miteinbezogen
 - Backoff wird wie vorher berechnet
