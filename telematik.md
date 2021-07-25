@@ -1088,3 +1088,135 @@ Beinhaltet
 - ID der angenommenen Wurzel-Bridge
 - Pfad-Kosten von der sendenden Bridge zu der Wurzel-Bridge
 
+# Kapitel 9: Data Center Networking
+## Datencenter
+- eine große Anzahl von Rechenservern mit Unterstützung für virtuelle Maschinen
+- umfangreiche Speichermöglichkeiten
+- handelsübliche Hardware
+   - große Anzahl: 100.000 Server und mehr
+   - Switche mit kleinen Puffern
+   - die Geräte fallen regelmäßig aus
+- handelsübliche Protokolle: TCP/IP, Ethernet
+- sollte ohne massive Reorganisation erweiterbar sein
+- müssen zuverlässig sein -> Redundanz
+- Anforderungen an Performanz und sehr geringe Latenzen (<1ms)
+
+## Datencenter-Netzwerk
+Verbindet die Server im Datencenter untereinander und mit dem Internet.
+
+## Fat-Tree Network
+Baum aus verschiedenen Ebenen:
+- Core
+- Aggregation
+- Edge
+- Server racks
+
+### Verkehrsarten
+East-west
+- zwischen internen Servern und Racks
+
+North-south
+- zwischen Extern (Internet) und den Servern
+
+### K-Pod Fat-Tree
+- jeder Switch hat k Ports
+- "Edge" und "Aggregation" sind in k Kapseln (Pods) aufgeteilt
+- k/2 Edge-Switches und k/2 Aggregation-Switches pro Kapsel
+- ingesamt k^2 Switche in den Kapseln
+
+# Kapitel 10: TCP Evolution
+## TCP Options
+Bis zu 40 Byte für beliebige TCP Optionen im Header verfügbar.
+- TLV-Format: Type Length Value
+
+### Selective ACKs
+- als Erweiterung der kommulativen ACKs, die schon so in TCP enthalten sind
+- sende zusätzlich eine Liste von schon empfangenen Bereichen nach dem normalen ACK
+
+### Window Scaling
+- Skalierungsfaktor für die Fenstergröße
+- bleibt während der gesamten Verbindung gleich
+
+### SYN Cookies
+- Problem des SYN Flooding: DoS-Attacke durch halb aufgebaute Verbindungen (speicher im Kernel wächst)
+- Lösung: Sende Zustand in SYN Cookies mit, anstatt diese im Server zu speichern
+- Hash und Zeitstempel zur Verifikation
+- tauscht Speicherbedarf mit Rechenaufwand
+- verhindert die Verwendung von anderen TCP Optionen (Window scaling, SACKs, ...)
+- deshalb wird es nur bei Bedarf (Ressourcenmangel) verwendet
+
+### Multipath TCP
+- TCP-Verbindung über mehrere Pfade/Schnittstellen
+- transparent für die Applikationsebene
+- hat sonst das erwartete TCP-Verhalten (Stichwort Middleboxes)
+- MP-Token wird beim Verbindungsaufbau ausgehandelt (`MP_CAPABLE`)
+- danach können "Subflows" als normale TCP-Verbindungen beitreten (`MP_JOIN`)
+- zum richtigen Zusammensetzen des Datenstroms werden zusätzlich Daten-Sequenznummern verwendet
+- zur Staukontrolle wird zusätzlich die Strategie "Link increase" hinzugefügt
+
+## Cubic TCP
+- Problem: TCP Reno kann die Ressourcen von Verbindungen mit hohem Bandbreitenverzögerungsprodukt schlecht ausreizen
+- die Erhöhung des Staukontrollfensters passiert unabhängig der Umlaufzeit
+- es wird stattdessen die wirkliche Zeit verwendet, die seit dem letzten Stauevent vergangen ist
+- darüber eine kubische Funktion für die Vergrößerung des Fensters
+- der Wert der multiplikativen Verkleinerung 𝛽 ist 0,7 statt 0,5
+- bei Netzwerken mit kleiner Umlaufzeit wird wieder AIMD verwendet ("Emulation" von TCP Reno)
+
+## Antwortzeit von TCP
+Problem: Eine Umlaufzeit muss auf jeden Fall gewartet werden.    
+Lösung: TCP Fast Open
+- generiere TFO-Cookie bei erster Verbindung mit dem Server
+- sende bei neuer Verbindung SYN+Cookie+Daten -> damit kann der Server direkt die Antwort schicken
+
+Problem: Slow Start wird bei kleinen Datenmengen nicht ausgereizt.    
+Lösung: Initiale Größe des Staufensters von mindestens 10
+
+## QUIC
+- neuer, auf UDP basierender Standard, welcher TCP ersetzen soll
+- TLS-Verschlüsselung fest eingebaut
+- keine festen Algorithmen für Staukontrolle, nur Mechanismen
+- Umlaufzeit (RTT) kann direkt gemessen werden, da Zeitstempel verwendet werden
+- der Empfang von Paketen wird einzeln (nicht akkumulativ) bestätigt
+- nach erstem Verbinden können neue Verbindungen direkt mit Daten begonnen werden (0-RTT)
+- Datenströme werden mit IDs abstrahiert
+- jedes Paket (auch ein erneut Gesendetes) bekommt eine eindeutige Nummer
+- die richtige Reihenfolge im Datenstrom wird mit Offsets umgesetzt (Trennung der beiden Mechanismen)
+- Pacing: Wartezeit zwischen dem Senden von Paketen
+
+# Kapitel 11: Access Networks
+## ISDN
+- Integrated Services Digital Network
+- B-Kanal für den Datentransfer
+- D-Kanal für den Signalverkehr
+- E-Kanal als Echo für CSMA/CD
+
+### AMI-Code
+- 0: Wechseln zwischen positivem und negativem Potential
+- 1: Durch das 0-Potential repräsentiert
+- 0 überschreibt 1
+
+### Kollisionserkennung
+- HDLC-Rahmen beginnt und endet mit Flag: 01111110
+- Bit-Stuffing: Nach 5 binären 1en wird eine 0 hinzugefügt
+
+## DSL
+- Invariante: Zwei Kabel gehen zum Kunden
+- tiefe Frequenzen fürs Telefon, Mittlere für den Upstream und Hohe für den Downstream
+- DSLAM ist für die Übersetzung von DSL ins Anbieter-Netz zuständig
+
+### BRAS
+- Broadband Remote Access Server
+- erster Router in Richtung Backbone
+- macht ggf. Authentifizierung (mit RADIUS)
+- weist IP-Adressen den Klienten zu
+
+## Weitere Technologien
+### Netzwerk des Kabelfernsehen
+Nutzt CMTS (Cable Modem Termination System):
+- Busstruktur mit Downstream per Broadcast und Upstream per Slots
+
+### Powerline
+Daten werden auf die Stromkabel im Haus moduliert.
+- teilweise störanfällig
+- hat sich nicht durchgesetzt
+
